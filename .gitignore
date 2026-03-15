@@ -8,15 +8,18 @@ wheels/
 
 # Virtual environments
 .venv
+uv.lock
 
 # Environment Variables
 .env
 
 # database
 db/
+*.db
 
 # ruff
 .ruff_cache/
 
 # logs
+logs/
 *.log
