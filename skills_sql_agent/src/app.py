@@ -1,6 +1,7 @@
 # app.py
 
 # Import built-in libraries
+import asyncio
 import os
 import sys
 import uuid
@@ -49,83 +50,61 @@ agent = create_agent(
 )
 
 
-# Configuration for this conversation thread
-thread_id = str(uuid.uuid4())
-config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
+def main() -> None:
+    """Main function to run the SQL agent."""
 
-# Ask for a SQL query
-result = agent.invoke(
-    input={
-        "messages": [
-            {
-                "role": "user",
-                "content": (
-                    "Write a SQL query to find all customers "
-                    "who made orders over $1000 in the last month"
-                ),
-            }
-        ]
-    },
-    config=config,
-)
+    # Configuration for this conversation thread
+    thread_id = str(uuid.uuid4())
+    config: RunnableConfig = {"configurable": {"thread_id": thread_id}}
 
-# Print the conversation
-for message in result["messages"]:
-    if hasattr(message, "pretty_print"):
-        message.pretty_print()
-    else:
-        print(f"{message.type}: {message.content}")
+    while True:
+        try:
+            # User Query
+            query: str = input("Type 'exit' to quit the conversation!\nYou: ").strip()
 
+            if not query:
+                continue
 
-# def main() -> None:
-#     """Main function to run the SQL agent."""
+            if query.lower() == "exit":
+                logger.info(msg="User exited conversation!")
+                print("Exiting...")
+                break
 
-#     while True:
-#         try:
-#             # User Query
-#             query: str = input("Type 'exit' to quit the conversation!\nYou: ").strip()
+            # Initialize final message
+            final_message = None
 
-#             if not query:
-#                 continue
+            # Stream agent response
+            for step in agent.stream(
+                input={"messages": [{"role": "user", "content": query}]},
+                config=config,
+                stream_mode="values",
+            ):
+                # Print step
+                step["messages"][-1].pretty_print()
 
-#             if query.lower() == "exit":
-#                 logger.info(msg="User exited conversation!")
-#                 print("Exiting...")
-#                 break
+                # Update final message
+                final_message = step["messages"][-1]
 
-#             # Initialize final message
-#             final_message = None
+            # Print final message
+            if final_message and hasattr(final_message, "content"):
+                if isinstance(final_message.content, list):
+                    for item in final_message.content:
+                        if item.get("type") == "text":
+                            print(f"\nFinal Answer: {item['text']}")
+                            logger.info(
+                                msg=f"SQL Agent retrieved final answer successfully: {item['text'][:50]} ..."
+                            )
+                else:
+                    print(f"\nFinal Answer: {final_message.content}")
 
-#             # Stream agent response
-#             for step in agent.stream(
-#                 {"messages": [{"role": "user", "content": query}]},
-#                 stream_mode="values",
-#             ):
-#                 # Print step
-#                 step["messages"][-1].pretty_print()
-#                 # Update final message
-#                 final_message = step["messages"][-1]
+        except KeyboardInterrupt, EOFError, asyncio.CancelledError:
+            logger.info(msg="Keyboard interrupt or EOF error!")
+            print("Exiting...")
+            break
 
-#             # Print final message
-#             if final_message and hasattr(final_message, "content"):
-#                 if isinstance(final_message.content, list):
-#                     for item in final_message.content:
-#                         if item.get("type") == "text":
-#                             print(f"\nFinal Answer: {item['text']}")
-#                             logger.info(
-#                                 msg=f"SQL Agent retrieved final answer successfully: {item['text'][:50]} ..."
-#                             )
-#                 else:
-#                     print(f"\nFinal Answer: {final_message.content}")
-
-#         except KeyboardInterrupt, EOFError, asyncio.CancelledError:
-#             logger.info(msg="Keyboard interrupt or EOF error!")
-#             print("Exiting...")
-#             break
-
-#         except Exception as e:
-#             logger.error(msg=f"Unexpected error: {e}")
+        except Exception as e:
+            logger.error(msg=f"Unexpected error: {e}")
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
