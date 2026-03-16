@@ -23,9 +23,7 @@ logger: Logger = SqlAgentLog.get_logger(module_name=__name__)
 
 # Get environment variables
 GOOGLE_API_KEY: str | None = os.getenv(key="GOOGLE_API_KEY", default=None)
-LLM_MODEL: str = os.getenv(
-    key="LLM_MODEL", default="google_genai:gemini-2.5-flash-lite"
-)
+LLM_MODEL: str = os.getenv(key="LLM_MODEL", default="google_genai:gemini-2.5-flash")
 
 # Initialize model
 model: BaseChatModel = init_chat_model(model=LLM_MODEL, google_api_key=GOOGLE_API_KEY)
