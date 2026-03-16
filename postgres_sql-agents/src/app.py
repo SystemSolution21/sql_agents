@@ -106,7 +106,7 @@ def main() -> None:
                         if item.get("type") == "text":
                             print(f"\nFinal Answer: {item['text']}")
                             logger.info(
-                                msg=f"SQL Agent retrieved final answer successfully: {item['text'][:50]} ..."
+                                msg=f"SQL Agent retrieved successfully: {item['text'][:50]} ..."
                             )
                 else:
                     print(f"\nFinal Answer: {final_message.content}")

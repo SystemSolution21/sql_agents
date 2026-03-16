@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Optional
 
 
-class SqlAgentLog:
+class SkillAgentLog:
     """Logger class for RAG applications with file and console output."""
 
     _instance: Optional[logging.Logger] = None
@@ -25,8 +25,8 @@ class SqlAgentLog:
         Returns:
             logging.Logger: Configured logger instance
         """
-        if SqlAgentLog._instance is not None:
-            return SqlAgentLog._instance
+        if SkillAgentLog._instance is not None:
+            return SkillAgentLog._instance
 
         # Create logs directory
         current_dir: Path = Path(__file__).parent.parent.parent.resolve()
@@ -34,7 +34,7 @@ class SqlAgentLog:
         logs_dir.mkdir(exist_ok=True)
 
         # Configure log file
-        log_file: Path = logs_dir / "sql_agent.log"
+        log_file: Path = logs_dir / "skills_sql_agent.log"
 
         # Create and configure logger
         logger: logging.Logger = logging.getLogger(name=module_name)
@@ -63,7 +63,7 @@ class SqlAgentLog:
         logger.addHandler(hdlr=console_handler)
 
         # Store instance
-        SqlAgentLog._instance = logger
+        SkillAgentLog._instance = logger
 
         return logger
 
@@ -77,6 +77,6 @@ class SqlAgentLog:
         Returns:
             logging.Logger: Configured logger instance
         """
-        if SqlAgentLog._instance is None:
-            return SqlAgentLog.setup(module_name=module_name)
-        return SqlAgentLog._instance
+        if SkillAgentLog._instance is None:
+            return SkillAgentLog.setup(module_name=module_name)
+        return SkillAgentLog._instance

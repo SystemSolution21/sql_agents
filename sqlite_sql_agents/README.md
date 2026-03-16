@@ -13,7 +13,7 @@ uv sync
 ## Run
 
 ```sh
-uv run sql-agents\src\app.py
+uv run sqlite_sql_agent\src\app.py
 ```
 
 ## What it does

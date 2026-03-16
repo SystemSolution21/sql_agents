@@ -1,7 +1,6 @@
-"""Logging configuration module for the PostgreSQL agent application.
-
-This is intentionally copied from the sqlite agent app so the two can
-coexist without modifying the original codebase.
+"""
+Logging configuration module for the RAG application.
+Provides centralized logging setup with both file and console output.
 """
 
 import logging
@@ -10,14 +9,15 @@ from pathlib import Path
 from typing import Optional
 
 
-class SkillAgentLog:
+class SqlAgentLog:
     """Logger class for RAG applications with file and console output."""
 
     _instance: Optional[logging.Logger] = None
 
     @staticmethod
     def setup(module_name: str) -> logging.Logger:
-        """Configure and return a logger instance with both file and console handlers.
+        """
+        Configure and return a logger instance with both file and console handlers.
 
         Args:
             module_name: Name of the module requesting the logger
@@ -25,8 +25,8 @@ class SkillAgentLog:
         Returns:
             logging.Logger: Configured logger instance
         """
-        if SkillAgentLog._instance is not None:
-            return SkillAgentLog._instance
+        if SqlAgentLog._instance is not None:
+            return SqlAgentLog._instance
 
         # Create logs directory
         current_dir: Path = Path(__file__).parent.parent.parent.resolve()
@@ -34,7 +34,7 @@ class SkillAgentLog:
         logs_dir.mkdir(exist_ok=True)
 
         # Configure log file
-        log_file: Path = logs_dir / "skill_sql_agent.log"
+        log_file: Path = logs_dir / "sqlite_sql_agent.log"
 
         # Create and configure logger
         logger: logging.Logger = logging.getLogger(name=module_name)
@@ -63,13 +63,14 @@ class SkillAgentLog:
         logger.addHandler(hdlr=console_handler)
 
         # Store instance
-        SkillAgentLog._instance = logger
+        SqlAgentLog._instance = logger
 
         return logger
 
     @staticmethod
     def get_logger(module_name: str) -> logging.Logger:
-        """Get or create a logger instance.
+        """
+        Get or create a logger instance.
 
         Args:
             module_name: Name of the module requesting the logger
@@ -77,6 +78,6 @@ class SkillAgentLog:
         Returns:
             logging.Logger: Configured logger instance
         """
-        if SkillAgentLog._instance is None:
-            return SkillAgentLog.setup(module_name=module_name)
-        return SkillAgentLog._instance
+        if SqlAgentLog._instance is None:
+            return SqlAgentLog.setup(module_name=module_name)
+        return SqlAgentLog._instance

@@ -1,6 +1,7 @@
-"""
-Logging configuration module for the RAG application.
-Provides centralized logging setup with both file and console output.
+"""Logging configuration module for the PostgreSQL agent application.
+
+This is intentionally copied from the sqlite agent app so the two can
+coexist without modifying the original codebase.
 """
 
 import logging
@@ -16,8 +17,7 @@ class SqlAgentLog:
 
     @staticmethod
     def setup(module_name: str) -> logging.Logger:
-        """
-        Configure and return a logger instance with both file and console handlers.
+        """Configure and return a logger instance with both file and console handlers.
 
         Args:
             module_name: Name of the module requesting the logger
@@ -34,7 +34,7 @@ class SqlAgentLog:
         logs_dir.mkdir(exist_ok=True)
 
         # Configure log file
-        log_file: Path = logs_dir / "sql_agent.log"
+        log_file: Path = logs_dir / "postgres_sql_agent.log"
 
         # Create and configure logger
         logger: logging.Logger = logging.getLogger(name=module_name)
@@ -69,8 +69,7 @@ class SqlAgentLog:
 
     @staticmethod
     def get_logger(module_name: str) -> logging.Logger:
-        """
-        Get or create a logger instance.
+        """Get or create a logger instance.
 
         Args:
             module_name: Name of the module requesting the logger

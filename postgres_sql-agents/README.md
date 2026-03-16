@@ -23,7 +23,7 @@ POSTGRES_DATABASE_URL=postgresql://<user>:<pass>@<host>:<port>/<dbname>
 ## Run
 
 ```sh
-uv run sql-agents-postgres\src\app.py
+uv run postgres_sql_agent\src\app.py
 ```
 
 ## Notes

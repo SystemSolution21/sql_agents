@@ -1,5 +1,5 @@
 [project]
-name = "sql-agents"
+name = "sql_agents"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
