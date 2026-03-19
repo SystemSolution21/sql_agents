@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 # Import langchain libraries
 from langchain.agents import create_agent
 from langchain.chat_models import BaseChatModel, init_chat_model
+from langchain_community.agent_toolkits import SQLDatabaseToolkit
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.memory import InMemorySaver
 
@@ -21,6 +22,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Import local modules
+from database import db
 from skills.skill import SkillMiddleware
 from utils.logger import SkillAgentLog
 
@@ -40,14 +42,58 @@ LLM_MODEL: str = os.getenv(key="LLM_MODEL", default="google_genai:gemini-2.5-fla
 # Initialize model
 model: BaseChatModel = init_chat_model(model=LLM_MODEL, google_api_key=GOOGLE_API_KEY)
 
+# Initialize SQL Database Toolkit
+sql_toolkit = SQLDatabaseToolkit(db=db, llm=model)
+sql_tools = sql_toolkit.get_tools()
+
+# Log available SQL tools
+for tool in sql_tools:
+    logger.info(f"SQL Tool: {tool.name} - {tool.description}")
+
+# Agent System Prompt
+system_prompt = """
+You are an agent designed to interact with a SQL database.
+
+## Available Skills
+
+You have access to specialized skills that provide detailed database schemas and business logic:
+- **sales_analytics**: Database schema for sales data analysis (customers, orders, revenue)
+- **inventory_management**: Database schema for inventory tracking (products, warehouses, stock)
+
+## Workflow
+
+When a user asks a question:
+
+1. **Identify the relevant skill** based on the question topic
+2. **Load the skill** using the load_skill tool to get the detailed schema and business logic
+3. **Examine the database** - Look at available tables to confirm what you can query
+4. **Query the schema** of the most relevant tables
+5. **Generate the SQL query** using the write_sql_query tool with the appropriate vertical
+6. **Execute the query** and return the results
+
+## Query Guidelines
+
+- Create syntactically correct {dialect} queries
+- Limit results to at most {top_k} unless user specifies otherwise
+- Order results by relevant columns for most interesting examples
+- Only query relevant columns, not all columns from a table
+- MUST double check your query before executing
+- If you get an error, rewrite the query and try again
+- DO NOT make DML statements (INSERT, UPDATE, DELETE, DROP)
+
+## Important
+
+Always start by loading the appropriate skill to understand the schema and business logic before writing queries.
+""".format(
+    dialect=db.dialect,
+    top_k=5,
+)
 
 # Create the agent with skill support
 agent = create_agent(
     model=model,
-    system_prompt=(
-        "You are a SQL query assistant that helps users "
-        "write queries against business databases."
-    ),
+    tools=sql_tools,
+    system_prompt=system_prompt,
     middleware=[SkillMiddleware()],
     checkpointer=InMemorySaver(),
 )

@@ -7,10 +7,17 @@
 - product_id (PRIMARY KEY)
 - product_name
 - sku
-- category
-- unit_cost
+- category_id (FOREIGN KEY -> categories)
+- unit
+- price
 - reorder_point (minimum stock level before reordering)
 - discontinued (boolean)
+
+### categories
+
+- category_id (PRIMARY KEY)
+- category_name
+- description
 
 ### warehouses
 

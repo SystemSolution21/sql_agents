@@ -5,7 +5,12 @@
 ### customers
 
 - customer_id (PRIMARY KEY)
-- name
+- customer_name
+- contact_name
+- address
+- city
+- postal_code
+- country
 - email
 - signup_date
 - status (active/inactive)
@@ -20,9 +25,9 @@
 - total_amount
 - sales_region (north/south/east/west)
 
-### order_items
+### order_details
 
-- item_id (PRIMARY KEY)
+- order_detail_id (PRIMARY KEY)
 - order_id (FOREIGN KEY -> orders)
 - product_id
 - quantity
