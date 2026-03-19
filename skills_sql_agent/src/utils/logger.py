@@ -5,6 +5,7 @@ coexist without modifying the original codebase.
 """
 
 import logging
+import os
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Optional
@@ -16,11 +17,12 @@ class SkillAgentLog:
     _instance: Optional[logging.Logger] = None
 
     @staticmethod
-    def setup(module_name: str) -> logging.Logger:
-        """Configure and return a logger instance with both file and console handlers.
+    def setup(module_name: str, enable_console: bool = False) -> logging.Logger:
+        """Configure and return a logger instance with file handler and optional console handler.
 
         Args:
             module_name: Name of the module requesting the logger
+            enable_console: Whether to enable console logging (default: False)
 
         Returns:
             logging.Logger: Configured logger instance
@@ -45,7 +47,7 @@ class SkillAgentLog:
             "%(asctime)s - %(levelname)s - %(module)s - %(message)s"
         )
 
-        # Rotating file handler
+        # Rotating file handler (always enabled)
         file_handler: RotatingFileHandler = RotatingFileHandler(
             filename=log_file,
             maxBytes=10_000_000,  # 10 MB
@@ -54,13 +56,14 @@ class SkillAgentLog:
         )
         file_handler.setFormatter(fmt=formatter)
 
-        # Console handler
-        console_handler: logging.StreamHandler = logging.StreamHandler()
-        console_handler.setFormatter(fmt=formatter)
-
-        # Add handlers to logger
+        # Add file handler to logger
         logger.addHandler(hdlr=file_handler)
-        logger.addHandler(hdlr=console_handler)
+
+        # Console handler (only if enabled)
+        if enable_console:
+            console_handler: logging.StreamHandler = logging.StreamHandler()
+            console_handler.setFormatter(fmt=formatter)
+            logger.addHandler(hdlr=console_handler)
 
         # Store instance
         SkillAgentLog._instance = logger
@@ -78,5 +81,11 @@ class SkillAgentLog:
             logging.Logger: Configured logger instance
         """
         if SkillAgentLog._instance is None:
-            return SkillAgentLog.setup(module_name=module_name)
+            # Check environment variable for console logging
+            enable_console: bool = (
+                os.getenv("ENABLE_CONSOLE_LOGGING", "false").lower() == "true"
+            )
+            return SkillAgentLog.setup(
+                module_name=module_name, enable_console=enable_console
+            )
         return SkillAgentLog._instance

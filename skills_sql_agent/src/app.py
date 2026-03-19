@@ -31,6 +31,9 @@ load_dotenv()
 logger: Logger = SkillAgentLog.get_logger(module_name=__name__)
 
 # Get environment variables
+PRINT_STREAM_MODE: bool = (
+    os.getenv(key="PRINT_STREAM_MODE", default="true").lower() == "true"
+)  # true, false
 GOOGLE_API_KEY: str | None = os.getenv(key="GOOGLE_API_KEY", default=None)
 LLM_MODEL: str = os.getenv(key="LLM_MODEL", default="google_genai:gemini-2.5-flash")
 
@@ -40,7 +43,7 @@ model: BaseChatModel = init_chat_model(model=LLM_MODEL, google_api_key=GOOGLE_AP
 
 # Create the agent with skill support
 agent = create_agent(
-    model,
+    model=model,
     system_prompt=(
         "You are a SQL query assistant that helps users "
         "write queries against business databases."
@@ -79,23 +82,41 @@ def main() -> None:
                 config=config,
                 stream_mode="values",
             ):
-                # Print step
-                step["messages"][-1].pretty_print()
+                # Print stream
+                if PRINT_STREAM_MODE:
+                    step["messages"][-1].pretty_print()
 
                 # Update final message
                 final_message = step["messages"][-1]
 
             # Print final message
             if final_message and hasattr(final_message, "content"):
-                if isinstance(final_message.content, list):
-                    for item in final_message.content:
-                        if item.get("type") == "text":
-                            print(f"\nFinal Answer: {item['text']}")
-                            logger.info(
-                                msg=f"SQL Agent retrieved final answer successfully: {item['text'][:50]} ..."
-                            )
-                else:
-                    print(f"\nFinal Answer: {final_message.content}")
+                try:
+                    if isinstance(final_message.content, list):
+                        for item in final_message.content:
+                            if isinstance(item, dict) and item.get("type") == "text":
+                                print(f"\nSkills Sql Agent: {item['text']}")
+                                logger.info(
+                                    msg=f"Skills Sql Agent: {item['text'][:50]} ..."
+                                )
+                            elif isinstance(item, str):
+                                print(f"\nSkills Sql Agent: {item}")
+                                logger.info(msg=f"Skills Sql Agent: {item[:50]} ...")
+                    elif isinstance(final_message.content, str):
+                        print(f"\nSkills Sql Agent: {final_message.content}")
+                        logger.info(
+                            msg=f"Skills Sql Agent: {final_message.content[:50]} ..."
+                        )
+                    else:
+                        print(f"\nSkills Sql Agent: {final_message.content}")
+                        logger.info(
+                            msg=f"Skills Sql Agent: {str(final_message.content)[:50]} ..."
+                        )
+                except Exception as content_error:
+                    logger.error(
+                        f"Error processing final message content: {content_error}"
+                    )
+                    print(f"\nSkills Sql Agent: {final_message.content}")
 
         except KeyboardInterrupt, EOFError, asyncio.CancelledError:
             logger.info(msg="Keyboard interrupt or EOF error!")

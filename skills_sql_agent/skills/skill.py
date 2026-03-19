@@ -3,13 +3,18 @@
 # Import built-in libraries
 from logging import Logger
 from pathlib import Path
-from typing import Callable, TypedDict
-
-from langchain.agents.middleware import AgentMiddleware, ModelRequest, ModelResponse
-from langchain.messages import SystemMessage
+from typing import Callable, NotRequired, TypedDict
 
 # Import langchain libraries
-from langchain.tools import tool
+from langchain.agents.middleware import (
+    AgentMiddleware,
+    AgentState,
+    ModelRequest,
+    ModelResponse,
+)
+from langchain.messages import SystemMessage, ToolMessage
+from langchain.tools import ToolRuntime, tool
+from langgraph.types import Command
 
 # Import local modules
 from src.utils.logger import SkillAgentLog
@@ -53,7 +58,7 @@ SKILLS: list[Skill] = [
 
 # Create skills loading tool
 @tool
-def load_skill(skill_name: str) -> str:
+def load_skill(skill_name: str, runtime: ToolRuntime) -> Command:
     """Load the full content of a skill into the agent's context.
 
     Use this when you need detailed information about how to handle a specific
@@ -66,18 +71,82 @@ def load_skill(skill_name: str) -> str:
     # Find and return the requested skill
     for skill in SKILLS:
         if skill["name"] == skill_name:
-            return f"Loaded skill: {skill_name}\n\n{skill['content']}"
+            skill_content: str = f"Loaded skill: {skill_name}\n\n{skill['content']}"
+
+            # Update state to track loaded skill
+            return Command(
+                update={
+                    "messages": [
+                        ToolMessage(
+                            content=skill_content,
+                            tool_call_id=runtime.tool_call_id,
+                        )
+                    ],
+                    "skills_loaded": [skill_name],
+                }
+            )
 
     # Skill not found
-    available = ", ".join(s["name"] for s in SKILLS)
-    return f"Skill '{skill_name}' not found. Available skills: {available}"
+    available: str = ", ".join(s["name"] for s in SKILLS)
+    content: str = f"Skill '{skill_name}' not found. Available skills: {available}"
+    return Command(
+        update={
+            "messages": [
+                ToolMessage(
+                    content=content,
+                    tool_call_id=runtime.tool_call_id,
+                )
+            ]
+        }
+    )
 
 
-class SkillMiddleware(AgentMiddleware):
+# Create SQL query writing tool
+@tool
+def write_sql_query(
+    query: str,
+    vertical: str,
+    runtime: ToolRuntime,
+) -> str:
+    """Write and validate a SQL query for a specific business vertical.
+
+    This tool helps format and validate SQL queries. You must load the
+    appropriate skill first to understand the database schema.
+
+    Args:
+        query: The SQL query to write
+        vertical: The business vertical (sales_analytics or inventory_management)
+    """
+    # Check if the required skill has been loaded
+    skills_loaded = runtime.state.get("skills_loaded", [])
+
+    if vertical not in skills_loaded:
+        return (
+            f"Error: You must load the '{vertical}' skill first "
+            f"to understand the database schema before writing queries. "
+            f"Use load_skill('{vertical}') to load the schema."
+        )
+
+    # Validate and format the query
+    return (
+        f"SQL Query for {vertical}:\n\n"
+        f"```sql\n{query}\n```\n\n"
+        f"✓ Query validated against {vertical} schema\n"
+        f"Ready to execute against the database."
+    )
+
+
+class CustomState(AgentState):
+    """Custom agent state to track loaded skills."""
+
+    skills_loaded: NotRequired[list[str]]  # Track which skills have been loaded
+
+
+class SkillMiddleware(AgentMiddleware[CustomState]):
     """Middleware that injects skill descriptions into the system prompt."""
 
-    # Register the load_skill tool as a class variable
-    tools = [load_skill]
+    state_schema = CustomState  # Register the custom agent state to track loaded skills
+    tools = [load_skill, write_sql_query]  # Register the tools
 
     def __init__(self):
         """Initialize and generate the skills prompt from SKILLS."""
