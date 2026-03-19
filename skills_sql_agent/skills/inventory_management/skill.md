@@ -44,6 +44,12 @@
 - movement_date
 - reference_number
 
+### testproducts
+
+- product_id (PRIMARY KEY)
+- product_name
+- category_id (FOREIGN KEY -> categories)
+
 ## Business Logic
 
 **Available stock**: quantity_on_hand from inventory table where quantity_on_hand > 0
